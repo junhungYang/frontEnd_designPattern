@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>文件上传</title>
+    <style>
+        #show {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="show">duyi</div>
+    <button type="bg">add greenBg</button>
+    <button type="cl">add blueColor</button>
+    <button type="fs">add fontSize</button>
+    <button type="fw">add fontWeight</button>
+    <button type="op">add opacity</button>
+    <script>
+        // 代理模式之文件上传 
+        // 把一些开销很大的操作延迟到真正需要它执行时才去执行，如文件上传，每发一个请求就会消耗一次性能，那何不把需要上传的资源全聚合到一定程度时才统一发出呢
+        {
+            let oDiv = document.getElementById('show')
+            let oButtonArray = document.getElementsByTagName('button')
+            for(let i = 0; i < oButtonArray.length; i++) {
+                oButtonArray[i].onclick = function () {
+                    changeStyle(this.getAttribute('type'))
+                }
+            }
+            let changeStyle = (function () {
+                let typeObj = {
+                    bg: ['backgroundColor','green'],
+                    cl: ['color','blue'],
+                    fs: ['fontSize','20px'],
+                    fw: ['fontWeight','bold'],
+                    op: ['opacity','0.5']
+                }
+                let arr = []
+                return function (type) {
+                    clearTimeout(this.timer)
+                    arr.push(typeObj[type])
+                    this.timer = setTimeout(() => {
+                        arr.forEach(item => {
+                            oDiv.style[item[0]] = item[1]
+                        })
+                    }, 600);
+                }
+            })()
+        }
+    </script>
+</body>
+</html>

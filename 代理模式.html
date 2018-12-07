@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>代理模式</title>
+</head>
+<body>
+    <script>
+        // 定义：为一个对象提供一种代理以控制对这个对象的访问，
+        // 可以形象地理解为在两者之间通过一个中介，该中介可以负责数据的传递，数据的过滤，访问的时间或次数的限制等等。如生活中的快递员，房屋中介，或者安检等等
+        // 总结来说其目的即使个体双方之间达成一种更好，更和谐，更合理的互动。
+
+        // 代理模式的分类
+        // 1.虚拟代理： 虚拟代理是把一些开销很大的对象，延迟到真正需要它的时候才去创建执行
+        // 2.安全代理： 控制只是对象的访问权限
+        // 3.远程代理： 一个对象将不同空间的对象进行局部代理（前端中不常用）
+        // 4.职能代理： 调用对象代理，处理另外一些事情如垃圾回收机制增加额外的服务
+
+        // 应用场景
+        // 1. 虚拟代理： 文件上传，图片加载等
+        //      文件上传：例如发快递，假如多个快递需要发至同一个地方，而且时间上又不是非常急促时，商店一般会等需要发送的快递积攒到一定程度时才统一拿去快递公司进行发货，
+        //               这也是当我们早上买了一个商品后，商店会在下午4点或5点左右才发出的原因
+        //      图片加载： 例如淘宝下拉刷新，有时候用户不一定会往下拉，可能用户浏览完首屏时就关闭了网页，那么假如在网页刚开始加载回来时就加载了不止首屏的图片时，将会是一个没有意义的资源开销
+
+        // 2. 保护(安全)代理：登录操作后才能看全功能，前端校验（正则校验）
+        // 3. 远程代理： 监控多个对象的状态，总机监控分店，远程代理更多用于后台，就如同一个老板下面有很多分店，那他不可能到每一个分店去查账，这时就需要把各分店的账目全汇聚至总机，方便进行查看了
+        // 4. 智能代理： 提供额外的其他服务，火车站代售处，如注册账号过程中，当填入用户名时发现用户名已经被使用，那么系统将给你分配一些接近你所输入的用户名的字段让你去进行选择
+        //              当然你也可以去使用它所提供的这些用户名，也可以自己进行从新的输入
+
+        // 假如mrDend直接送花给goddness时有可能失败，因为此时goddness的mood可能为mood, 假如goddness的心情为false,却执行送花操作的话
+        // 就是一次没有意义的开销，为确保成功率以及更高效地执行逻辑操作，我们特意创建cheng作为中介操作，实时监听goddness的心情以实现mrDeng的百分百送花成功
+        {
+            let mrDeng = {
+                sendFlower(target) {
+                    var flower = 'sunflower'
+                    target.receiveFlower(flower)
+                }
+            }
+
+            // 代理人，确保在goddness心情好时才送花
+            let cheng = {
+                target: null,
+                proxyFlower(target) {
+                    this.target = target
+                    this.listenMood(() => {
+                        mrDeng.sendFlower(this.target)
+                    })
+                },
+                listenMood(func) {
+                    var timer = setInterval( () => {
+                        if(this.target.mood) {
+                            func();
+                            clearInterval(timer)
+                        }
+                    })
+                }
+            }
+
+            let goddness = {
+                mood: null,
+                receiveFlower(flower) {
+                    console.log(this.mood ? 'ok' : 'get out')
+                },
+                changeMood() {
+                    this.mood = Math.random() > 0.8 ? true : false
+                },
+                createMood() {
+                    this.changeMood()
+                    setInterval(() => {
+                        this.changeMood()
+                    },300)
+                }
+            }
+            goddness.createMood()
+            cheng.proxyFlower(goddness)
+        }
+
+        
+    </script>
+</body>
+</html>

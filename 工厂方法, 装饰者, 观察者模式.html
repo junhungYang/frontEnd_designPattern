@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+  <body>
+      <button id="add1">飞机1 blood+</button>
+      <button id="add2">飞机2 blood+</button>
+    <script>
+      // 工厂模式
+      // 定义：工厂模式定义创建对象的接口，但是真正实例化一个对象是通过工厂的子类而不是工厂本身，假如需要创建多个相同对象时
+      // 通过构造函数去进行创建会比字面量更加高效，但构造函数仅仅提供给了我们创建很多个飞机的方式，而不是很多种飞机的方式
+      // 而工厂模式旨在管理多个构造函数，从而实现创建不同种类的飞机
+
+      // 工厂模式对比其他模式
+      // 1.工厂集中了所有对象的创建，便于对象创建的同一管理
+      // 2.通过单一职责降低了复杂度（通过增加耦合度，降低复杂度的方式）
+      // 3.便于拓展，如果新增了一种业务，只需要增加相关的业务对象类以及在工厂中添加生产该业务对象的方法
+      // 4.但其违反了开闭原则，即没有提供新增业务的接口，而是需要在工厂函数体内进行修改
+
+      // 结论： 也没有想象中的那么的好
+      {
+        class SmallPlane {
+          constructor() {
+            this.width = 100;
+            this.height = 100;
+            this.name = "smallPlane";
+            this.blood = 100;
+            this.touch = function() {
+              this.blood -= 100;
+              if (this.blood === 0) {
+                console.log("die");
+              }
+            };
+          }
+        }
+
+        class BigPlane {
+          constructor() {
+            this.width = 200;
+            this.height = 200;
+            this.name = "BigPlane";
+            this.blood = 200;
+            this.touch = function() {
+              this.blood -= 50;
+              if (this.blood === 0) {
+                console.log("die");
+              }
+            };
+          }
+        }
+
+        function planeFactory(type) {
+          let newPlane = null;
+          switch (type) {
+            case "smallPlane":
+              newPlane = new SmallPlane();
+              break;
+            case "bigPlane":
+              newPlane = new BigPlane();
+              break;
+          }
+          return newPlane;
+        }
+      }
+
+      // 工厂方法模式
+      // 不再有唯一的工厂类去创建产品，而是将不同的产品交给对应的工厂类去进行创建，每个产品有负责生产的子工厂进行创建，如果添加新的产品
+      // 需要做的是添加新的子工厂和产品，而不需要修改其他的工厂代码
+
+      // 供方方法模式的组成
+      // 1. 抽象工厂类： 负责定义创建产品的公共接口
+      // 2. 产品子工厂： 继承抽象工厂类，实现抽象工厂类提供的公共接口
+      // 3. 产品类
+
+      // 特点分析
+      // 代码比简单工厂模式复杂了，引入了抽象层，还有子工厂，这回增加代码的复杂度和理解难度。但相比于简单工厂模式代码的维护性和拓展性提高了，新增产品时
+      // 只需要增加对应的产品类和产品工厂类，不需要修改到抽象工厂类和其他子工厂。更加符合面向对象的开闭原则
+      // 当然具体场景具体分析，复杂性和拓展性相比如何取舍，在使用时应结合实际场景以及业务需求
+      {
+        // 抽象工厂类
+        function PlaneFactory() {}
+        // 创建对象的接口
+        PlaneFactory.create = function(type) {
+          if (!PlaneFactory.prototype[type]) {
+            throw "no this constructor";
+          }
+          // 实现继承
+          if (
+            PlaneFactory.prototype[type].prototype.__proto__ !==
+            PlaneFactory.prototype
+          ) {
+            // 这里不能让子类工厂的构造函数的原型直接等于抽象层的原型
+            // 原因在于当我们想针对某一子类工厂所创造的实例对象的原型进行拓展时，拓展的地方应该是实例对象的自己原型
+            // 而不应该是抽象层的原型，因为其他子类实例不一定需要该方法，或者说会导致其他子类实例上的方法被修改
+            PlaneFactory.prototype[type].prototype === new PlaneFactory();
+          }
+          let arg = Array.from(arguments).slice(1);
+          console.log(arg);
+          return new PlaneFactory.prototype[type](...arg);
+        };
+
+        // 拓展公共方法
+        PlaneFactory.prototype.touch = function() {
+          this.blood -= 50;
+          if (this.blood === 0) {
+            console.log("die");
+          }
+        };
+        // 添加子类工厂
+        PlaneFactory.prototype.smallPlane = function(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 100;
+          this.height = 100;
+          this.name = "smallPlane";
+          this.blood = 100;
+        };
+        PlaneFactory.prototype.bigPlane = function(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 200;
+          this.height = 200;
+          this.name = "BigPlane";
+          this.blood = 200;
+        };
+        // 拓展某一子类
+        PlaneFactory.prototype.bigPlane.prototype.attack = function() {
+        //   console.log("biu");
+        };
+        // let bP = PlaneFactory.create("bigPlane", 5, 10);
+        // let sP = PlaneFactory.create("smallPlane", 20, 20);
+        // bP.attack();
+      }
+
+      // 装饰者模式
+      // 定义： 装饰者模式能够在不改变对象初始化状态的情况下，在程序运行期间给子类增加行为从而影响原有类所产生的所有的实例，
+      // 装饰者模式强调的是程序运行期间，而不是子类实例生产前所做的准备，举个实例，在游戏中为某一人物添加皮肤或者衣服的操作符合装饰者模式的思想
+      // 而该人物并不是从初识化出来时便穿好了各种的衣服或者装备，在其初识化出来时它只具备一些默认的特性，而在程序运行期间则通过装饰者模式给它添加上用户所希望的装扮
+
+      // 实现： 构造函数需要一个装饰资源池，提供相应的装饰方法，提供添加装饰方法的入口，当需要添加或修改的属性变得很多时
+      // 通过继承的方法去进行解决时会使代码结构的深度变得过高，而另立一个装饰资源词，当需要某一变化时去该资源词内取得该资源再添加至子类上
+      // 则能使代码结构比较好的维持在一个较低维的结构上
+
+      {
+        function PlaneFactory() {
+        // 资源装饰池，可以作用在所用同类内
+            this.decorate_list = []
+        }
+        
+        PlaneFactory.prototype.decorates = {
+            eatOneLife(obj) {
+                obj.blood += 100
+            },
+            eatTwoLife(obj) {
+                obj.blood += 200
+            }
+        }
+
+        // 清空资源装饰词
+        PlaneFactory.prototype.decorate = function () {
+            this.decorate_list = []
+        }
+
+        // 清楚装饰词内的某一个
+        PlaneFactory.prototype.remove = function (decorate) {
+            this.decorate_list.filter(function(item) {
+                return !(item === decorate)
+            })
+        }
+
+        // 搜集对某对象的装饰描述
+        PlaneFactory.prototype.decorate = function(decorate) {
+            // this.decorate_list = []   // 通过某一架飞机调用decorate时，只能作用在该指定实例上
+            this.decorate_list.push(decorate)
+        }
+
+        // 让装饰方法作用在该对象上
+        PlaneFactory.prototype.update = function () {
+            this.decorate_list.forEach(item => {
+                this.decorates[item] && this.decorates[item](this)
+            })
+        }
+
+
+
+        PlaneFactory.create = function(type) {
+          if (!PlaneFactory.prototype[type]) {
+            throw "no this constructor";
+          }
+          if (PlaneFactory.prototype[type].prototype.__proto__ !==PlaneFactory.prototype) {
+            PlaneFactory.prototype[type].prototype = new PlaneFactory();
+          }
+          let arg = Array.from(arguments).slice(1);
+          return new PlaneFactory.prototype[type](...arg);
+        };
+
+
+        PlaneFactory.prototype.touch = function() {
+          this.blood -= 50;
+          if (this.blood === 0) {
+            console.log("die");
+          }
+        };
+        PlaneFactory.prototype.smallPlane = function(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 100;
+          this.height = 100;
+          this.name = "smallPlane";
+          this.blood = 100;
+        };
+        PlaneFactory.prototype.bigPlane = function(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 200;
+          this.height = 200;
+          this.name = "BigPlane";
+          this.blood = 200;
+        };
+        let sP1 = PlaneFactory.create("smallPlane", 20, 20);
+        let sP2 = PlaneFactory.create('smallPlane',50,50);
+        sP1.decorate('eatOneLife')
+        let oBtn1 = document.getElementById('add1')
+        let oBtn2 = document.getElementById('add2')
+        oBtn1.onclick = function() {
+            sP1.update()
+            console.log(sP1)
+        }
+        oBtn2.onclick = function() {
+            sP2.update()
+            console.log(sP2)
+        }
+        
+        
+  
+      }
+    
+      // 观察者模式(发布订阅模式)
+      // 定义对象间一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都将得到通知并应作出某一种行为，
+      // 事件极致体现了发布订阅的思想，当某一事物触发了某一东西后，使其他的多个或单个事物作出某一行为或一系列行为
+      // 在依赖导致原则中其实体现的即是观察者模式，多个变量相互之间不产生任何联系，而是只与一个公共状态变量（state）发生联系
+      // 当该state发生变化时依赖于这个公共状态的变量们都相应地发生变化（vuex state）
+
+      // 在上一个装饰者事例中，可以在每一飞机上都绑定一个自定义事件，例如当用户获得了一个 雷 道具时 ，当它使用该雷可以使在场的所有飞机全部炸毁
+      // 这时就需要初始化飞机时都给他们绑定上一个自定义事件，当遇到雷时 直接炸毁，然后用户可以通过emmit触发该自定义事件时这些飞机炸毁
+      
+      // 绑定并触发自定义事件
+      // Event  on  emmit   remove  once
+
+      {
+        function Event() {
+          // 存储所传入的事件类型及其回调
+          this.cache = {
+
+          }
+        }
+        // 用于绑定自定义事件所需要的回调
+        Event.prototype.on = function(type,handle) {
+          if(!this.cache[type]) {
+            // 假如没有该事件，那么创建该事件并以一个数组存储该回调
+            this.cache[type] = [handle]
+          }else {
+            // 假如已经存在该事件，证明已经绑定过，那么只需把存入的回调push至相应的事件回调数组中
+            this.cache[type].push(handle)
+          }
+        }
+        // 用于触发绑定的自定义事件
+        Event.prototype.emmit = function() {
+          // 由于无法确认type后面的参数的个数，所以这里使用arguments
+          let type = arguments[0]
+           let arg = Array.from(arguments).slice(1);
+           this.cache[type].forEach(item => item(...arg) )
+          
+        }
+        Event.prototype.empty = function (type) {
+          this.cache[type] = []
+        }
+        Event.prototype.remove = function (type,handle) {
+          this.cache[type] = this.cache[type].filter(ele =>  !(ele === handle))
+        }
+        Event.prototype.once = function (type,handle) {
+
+        }
+        function deal1(time) {
+          console.log('overtime1:' + time)
+        }
+        function deal2(time) {
+          console.log('overtime2:' + time)
+        }
+        let oE = new Event()
+        oE.on('over', deal1)
+        oE.on('over',deal2)
+        
+        oE.emmit('over','2018-12-02')
+        oE.remove('over',deal2)
+        oE.emmit('over','s-2018-12-02')
+      }
+    
+    </script>
+  </body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>单例模式</title>
+</head>
+<body>
+    <button id="btn">signin</button>
+    <script>
+        // 单例模式
+        // 定义： 保证一个类仅有一个实例，并提供一个访问它的全局访问点，保证一个类仅有一个实例即无论我通过该类如何频繁地创建实例，
+        // 该实例都是同一个，即第一次创建该实例时的那一个。例如登录弹窗，即使多次点击弹出登录弹窗，那都是同一个登录弹窗
+        // 提供一个全局访问点，即可以在任何地方使用到它
+        
+        // 例子
+        {
+            // 在大的逻辑中我们应该考虑耦合度，在单个逻辑中应该考虑健壮性
+            // 这些健壮性可以包括传参的健壮性(参数数量，是否传参的判断，开闭原则等等)
+            
+            //方案一：缺点 Test.instance过于暴露，不符合开闭原则    
+           function Test (name) {
+               if(typeof Test.instance === 'object') {
+                   Test.instance.name = name
+                   return Test.instance
+               }
+               this.name = name
+               Test.instance = this
+           }
+           let a = new Test('a')
+           let b = new Test('b')
+
+            //方案二：闭包，对外开放，可对instance进行拓展，对内关闭，不允许把instance变为另一个对象，符合开闭原则
+           let Test1 = (function () {
+                let instance ;
+                return function (name) {
+                    if(typeof instance === 'object') {
+                        instance.name = name
+                        return instance
+                    }
+                    this.name = name
+                    instance = this
+                }
+           })()
+           let c = new Test1('a')
+           let d = new Test1('b')
+
+            // 单例模式登陆框
+            let flag = false //公共变量state
+            let createDom = (function() {
+                let box = null
+                return function(text) {
+                    if(box) {
+                        return flag ? box.style.display = 'block' : box.style.display = 'none'
+                    }
+                    box = document.createElement('div')
+                    box.innerText = text
+                    box.style.display = 'none'
+                    document.body.appendChild(box)
+                }
+            })()
+            // btn.onclick = function() {
+            //     flag = !flag
+            //     createDom('hello')
+            // }
+        }
+        {
+            // 创建一个函数，可以使非单利的函数变成单例的函数
+            let getSingleFunc = function (fn) {
+                let res = null
+                return function () {
+                    if(!res) {
+                        res = fn.apply(this, arguments)
+                    }
+                        return res
+                }
+            }
+            function createDiv (text) {
+                let oDiv = document.createElement('div')
+                oDiv.innerText = text
+                return oDiv
+            }
+            let singleCreateDiv = getSingleFunc(createDiv)
+            let oDiv1 = singleCreateDiv('text')
+            let oDiv2 = singleCreateDiv('text')
+            console.log(oDiv1 === oDiv2)
+        }
+    </script>
+</body>
+</html>

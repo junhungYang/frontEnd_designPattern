@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>保护代理</title>
+    <style>
+        input {
+            display: block;
+        }
+        .id-error,.ps-error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <input class="id" type="text">
+        <div class="id-error"></div>
+    </div>
+    <div>
+        <input class="ps" type="password">
+        <div class="ps-error"></div>
+    </div>
+    <div class="submit">注册</div>
+    <script>
+        // 保护代理
+        // 保护代理一般涉及登录操作以及前端校验
+        // 保护代理一般用于过滤掉一些不必要的请求，将真正需要的递给本题，例如校验用户名是否格式合法，如果用户名是不合法的
+        // 则不应该将该请求发送给后台，而应该在前端中将其拦截掉
+
+        // 不好的例子
+        {
+            // let submitBtn = document.getElementsByClassName('submit')[0]
+            // let id = document.getElementsByClassName('id')[0]
+            // let ps = document.getElementsByClassName('ps')[0]
+            // let idError = document.getElementsByClassName('id-error')[0]
+            // let psError = document.getElementsByClassName('ps-error')[0]
+            // let flag = true
+            // submitBtn.onclick = function() {
+            //     flag = true
+            //     idError.innerText = ''
+            //     psError.innerText = ''
+            //     if(id.value === '') {
+            //         flag = false
+            //         idError.innerText = '用户名不能为空'
+            //     }else if(id.value.length <= 6) {
+            //         flag = false
+            //         idError.innerText = '用户名长度不能小于等于6'
+            //     }
+            //     if(ps.value === '') {
+            //         flag = false
+            //         psError.innerText = '密码不能为空'
+            //     }else if(ps.value.length <= 6) {
+            //         flag = false
+            //         psError.innerText = '密码长度不能小于等于6'
+            //     }
+            //     if(flag) {
+            //         alert('注册成功')
+            //     }
+            // }
+
+            // 这样编写代码，的确能够完成业务的需求，能够完成表单的验证，但存在很多问题
+            // 1. 绑定的函数比较庞大，包含了很多的if-else语句，这些语句需要覆盖所有的校验规则
+            // 2. 绑定的函数缺乏弹性，如果增加了一种新的校验规则，我们都必须深入
+            // 3. 绑定的函数没有提供拓展的入口，未被了开闭原则
+            // 4. 算法的复用性差，如果程序中还有其他的表单，我们很可能需要把相同的逻辑复制得漫天遍野
+        }
+        {
+            let submitBtn = document.getElementsByClassName('submit')[0]
+            let id = document.getElementsByClassName('id')[0]
+            let ps = document.getElementsByClassName('ps')[0]
+            let idError = document.getElementsByClassName('id-error')[0]
+            let psError = document.getElementsByClassName('ps-error')[0]
+            // 代理模式和策略模式的结合
+            function Request() {
+                console.log('send')
+            }
+
+            function Validator() {
+                // cache与warnDom用作缓存，当用户点击提交时，将对其进行遍历以进行每一项规则的校验
+                this.cache = []
+                this.warnDom = []
+            }
+            // 校验规则
+            Validator.prototype.strategies = {
+                isNonEmpty(value,errorMsg) {
+                    if(value === '') {
+                        return errorMsg
+                    }
+                    return true
+                },
+                maxLength(value,length,errorMsg) {
+                    if(value !== '' && value.length > length) {
+                        return errorMsg
+                    }
+                    return true
+                },
+                minLength(value,length,errorMsg) {
+                    if(value !== '' && value.length < length) {
+                        return errorMsg
+                    }
+                    return true
+                }
+            }
+            // 规则添加
+            Validator.prototype.add = function (dom,showDom,strategyArr) {
+                // 将展示错误信息的dom push进warnDom内缓存，用于出现错误时进行展示
+                this.warnDom.push(showDom)
+                strategyArr.forEach((ele,index) => {
+                    // 将规则缓存与cache内
+                    this.cache.push(() => {
+                        // 存入的规则需先进行解码操作
+                        // arr =>  ['isNonEmpty'] ['maxLength','4']
+                        let arr = ele.strategy.split(':')
+
+                        // 把数组第0位数据截取下来，该数据即我们要使用的strategies内的某一格规则的key值
+                        // arr => [] ['4']
+                        let type = arr.shift()
+                        // 规则参数解码完毕后作为参数传入strategies的具体某一项中并执行
+                        let res = this.strategies[type](dom.value,...arr,ele.errorMsg)
+                        if(res !== true) {
+                            showDom.innerText = res
+                        }
+                        // 最后把res return出去用于作为提交按钮falg的上锁还是解锁标准
+                        return res
+                    })
+                })
+                // 方便进行链式调用
+                return this
+            }
+
+            // 开始校验Api
+            Validator.prototype.start = function () {
+                // flag用于最后是否允许提交信息到后台
+                let flag = true
+
+                // 初识化错误提示dom组
+                this.warnDom.forEach(function (ele) {
+                    ele.innerText = ''
+                })
+                this.cache.forEach(function (ele) {
+                    // 这里必须为绝对 !== 因为当不符合某一规则时 ele()所返回的值为errorMsg字符串,存在隐式类型转换
+                    if(ele() !== true) {
+                        flag = false
+                        console.log(flag)
+                    }
+                    return flag
+                })
+            }
+
+
+            let validator = new Validator();
+
+            // 拓展
+            Validator.prototype.extend = function (config) {
+                // 拓展应传入一个对象，该对象的结构与表现形式其实与strategies里面的每一项规则相同。
+                for(var prop in config) {
+                    Validator.prototype.strategies[prop] = config[prop]
+                }
+            }
+            
+            validator.extend({
+                isEmail(value,errorMsg) {
+                    if(value !== '' && value.indexOf('@') === -1) {
+                        return errorMsg
+                    }
+                    return true
+                },
+                isPhone(value,errorMsg) {
+                    if(value !== '' && value.length !== 11) {
+                        return errorMsg
+                    } 
+                    return true
+                }
+            })
+
+            let proxyRequest = (function() {
+                // 添加校验规则
+                validator.add(id,idError,[{strategy:'isNonEmpty',errorMsg:'用户名不能为空'}, { strategy: 'maxLength:6', errorMsg: '用户名长度不能超过6' }])
+                    .add(ps,psError, [{ strategy: 'isNonEmpty', errorMsg: '密码不能为空' }, { strategy: 'maxLength:6', errorMsg: '密码长度不能超过6' }])
+                return function() {
+                    if(validator.start() === true) {
+                        Request();
+                    }
+                }
+            })()
+            submitBtn.onclick = function() {
+                proxyRequest();
+            }
+            // 策略模式定义
+            // 策略模式是指对一系列的算法定义，并将每一个算法封装起来，而且使他们可以相互替换。策略模式让算法独立于使用它的客户而独立变化（说的不是人话）
+            // 简单地说通过一个对象对一系列的算法进行管理，使这些算法独立于函数封闭的作用域外，当需求发生变化时可以直接修改对象上的某一项，而不是在函数的作用域内对算法进行修改
+
+            // 策略模式特点
+            // 支持你在运行时选择算法，把它们一个个封装起来，并且使它们可以相互替换
+            // 决定用一个类对象实例来管理规则的校验
+            // 该对象要具备主动添加对规则相应的处理方法的能力 .add
+            // 校验数据的时候可以相应的返回相关信息
+
+            // 优点
+            // 提供了管理相关算法的方法，提供了可以不通过继承的方式进行拓展的办法，即在对象身上直接进行拓展或替换，而不需要通过子类继承父类方法的方式进行拓展，
+            // 可以避免使用多重条件转移语句，即通过在进行一系列的校验中通过.add .add .add的形式一行一行地进行过滤判断，而不是通过if else if else 一层一层地进行判断，
+            // 在.add .add 的形式进行过滤判断时，代码永远是处于单一纬度的，而if else一层一层进行判断时容易形成多维，导致代码的复杂度陡增，这与回调地狱是同一个道理
+        }
+    </script>
+</body>
+</html>

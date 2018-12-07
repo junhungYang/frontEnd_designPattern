@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>代理模式2</title>
+</head>
+<body>
+    <div id="demo"></div>
+    <script>
+        // 虚拟代理： 把一些开销很大的对象，延迟到真正需要它的时候才去创建执行
+        // 淘宝首页图片只加载首屏的图片信息，待用户发生上拉行为后才去加载下一屏的图片信息(懒加载) 
+        // 淘宝首页利用过剩的计算功能先把需要大范围使用的占位图片先加载回来，然后进行使用(预加载)
+        // 之所以把需要大范围使用的占位图片先加载回来的原因在于，实际的图片资源每一张的内容都是不一样的所以必须加载不同的图片资源
+        // 而占位图片在多个尺寸相等的img元素中只需要使用同一张，所以针对这种情况只需要加载一次，观察淘宝首页会发觉，
+        // 图片尺寸的不同一般只存在于不同的模块中，而相同模块中的多个img元素其尺寸相同
+        // 其次浏览器本身有缓存机制，当在未清除缓存下加载相同的数据时会在netWork中发现状态码200 from disk cache
+        {
+            // 实际应用于页面的img元素
+            let length = 3
+            function myImage(src) {
+                for(let i = 0; i < length; i++) {
+                    var img = document.createElement('img');
+                    document.getElementById('demo').appendChild(img)
+                }
+                let arr = Array.from(document.getElementsByTagName('img'))
+                this.setSrc = function (index,src) {
+                    if(index !== 'all') {
+                        arr[index].src = src
+                    }else {
+                        arr.forEach( item => {
+                            item.src = src
+                        }) 
+                    }
+                }
+            }
+            let proxyImage = (function() {
+                // 闭包层
+
+                // 实际应用于页面的img元素
+                let oMyImage = new myImage()
+
+                // 代理img元素,不用于页面
+                let arr = new Array(length).fill('')
+                arr.forEach((item,index) => {
+                    let img = new Image()
+
+                    // 监测实际内容图片是否加载回来
+                    img.onload = function() {
+                        oMyImage.setSrc(index,img.src)
+                    }
+                    arr[index] = img
+                           console.log(arr)
+                })
+                // 操作层
+                return function () {
+                    this.setOccupyImg = function(src) {
+                        // 先渲染统一的占位图片
+                        oMyImage.setSrc('all',src)
+                    }
+                    this.setContImg = function() {
+                        Array.from(arguments).forEach((item,index) => {
+                            arr[index].src = item
+                        })
+                    }
+                    // 把实际内容图片挂载至代理img元素上，开始加载图片，加载完成后onload触发
+                    // oImg.src = src
+                }
+            })()
+            let proxyControl =  new proxyImage()
+             proxyControl.setOccupyImg('http://shihuo.hupucdn.com/ucditor/20181116/812x812_320130de342c374a1a5babfeb5717b27.jpeg')
+            proxyControl.setContImg('http://shihuo.hupucdn.com/ucditor/20181116/1080x1080_e173c2d4e6840b492fad8c1b5bf795fd.jpeg','http://shihuo.hupucdn.com/ucditor/20181116/1080x1080_b787dfe6a62848b2297dee74b4e7363d.jpeg')
+            // proxyImage)
+        }
+        
+        
+    </script>
+</body>
+</html>
